@@ -9,6 +9,7 @@
 #import "WLDetailViewController.h"
 
 @interface WLDetailViewController ()
+@property (weak, nonatomic) IBOutlet UIWebView *webView;
 - (void)configureView;
 @end
 
@@ -33,6 +34,7 @@
     if (self.detailItem) {
         self.detailDescriptionLabel.text = [self.detailItem description];
     }
+    [self.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:self.detailItem]]];
 }
 
 - (void)viewDidLoad
@@ -40,6 +42,7 @@
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
     [self configureView];
+    self.automaticallyAdjustsScrollViewInsets = NO;
 }
 
 - (void)didReceiveMemoryWarning

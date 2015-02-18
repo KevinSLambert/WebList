@@ -12,9 +12,14 @@
 
 #import "WebsiteController.h"
 
-@interface WLMasterViewController () {
+@interface WLMasterViewController () <UISearchBarDelegate> {
     NSMutableArray *_objects;
+    NSMutableArray *_filteredObjects;
+
 }
+@property (weak, nonatomic) IBOutlet UISearchBar *searchBar;
+@property (nonatomic, strong) UISearchDisplayController * searchController;
+@property (nonatomic, strong) NSString * destinationURL;
 @end
 
 @implementation WLMasterViewController
@@ -31,6 +36,36 @@
     // self.navigationItem.leftBarButtonItem = self.editButtonItem;
 
     _objects = [WebsiteController websites].mutableCopy;
+    _filteredObjects = _objects;
+    
+    self.searchBar.delegate = self;
+    
+    self.searchController = [[UISearchDisplayController alloc] initWithSearchBar:self.searchBar contentsController:self];
+    self.searchController.searchResultsDataSource = self;
+    self.searchController.searchResultsDelegate = self;
+    [self.searchController.searchResultsTableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"SearchCell"];
+    
+    
+}
+-(void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    _filteredObjects = [NSMutableArray new];
+    
+    if (searchText.length == 0) {
+        _filteredObjects = _objects;
+    }
+    else {
+        
+        NSPredicate * pred = [NSPredicate predicateWithFormat:@"self CONTAINS[cd] %@", searchText];
+        _filteredObjects = [_objects filteredArrayUsingPredicate:pred].mutableCopy;
+        
+    }
+    
+//    for (NSString * url in _objects) {
+//        if ([url containsString:searchText]) {
+//            [_filteredObjects addObject:url];
+//        }
+//    }
+//    [self.tableView reloadData];
     
 }
 
@@ -59,16 +94,41 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return _objects.count;
+    if (tableView == self.tableView) {
+        return _objects.count;
+    }
+    return _filteredObjects.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
 
-    cell.textLabel.text = _objects[indexPath.row];
+    if (tableView == self.tableView) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
+        cell.textLabel.text = _objects[indexPath.row];
+        return cell;
+    }
+    else {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"SearchCell" forIndexPath:indexPath];
 
-    return cell;
+        cell.textLabel.text = _filteredObjects[indexPath.row];
+        return cell;
+    }
+}
+
+-(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if (tableView == self.searchController.searchResultsTableView) {
+        
+        self.destinationURL = _filteredObjects[indexPath.row];
+        
+    } else {
+        
+        self.destinationURL = _objects[indexPath.row];
+        
+    }
+    
+    [self performSegueWithIdentifier:@"showDetail" sender:nil];
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
@@ -106,8 +166,7 @@
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     if ([[segue identifier] isEqualToString:@"showDetail"]) {
-        NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
-        [[segue destinationViewController] setDetailItem:_objects[indexPath.row]];
+        [[segue destinationViewController] setDetailItem:self.destinationURL];
     }
 }
 
